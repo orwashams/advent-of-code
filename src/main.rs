@@ -1,6 +1,5 @@
 mod days;
 
 fn main() {
-    days::day3::solve();
-    println!("Hello, world!");
+    days::day4::solve();
 }
