@@ -1,4 +1,4 @@
-
+#[allow(dead_code, unused_imports)]
 pub fn solve() {
     use std::{fs, ops::Add};
 
@@ -23,6 +23,7 @@ pub fn solve() {
     println!("{}", result);
 }
 
+#[allow(dead_code, unused_imports)]
 enum XYZ {
     X = 0, //You Must Lost
     Y = 3, //You Must Draw
