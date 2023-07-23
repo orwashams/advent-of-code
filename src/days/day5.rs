@@ -1,12 +1,9 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    fs,
-};
+use std::{collections::HashMap, fs};
 
 pub fn solve() {
     let file = fs::read_to_string("input.txt").unwrap();
 
-    let mut map: HashMap<String, VecDeque<String>> = HashMap::new();
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
 
     for line in file.lines() {
         let vec = line
@@ -20,8 +17,7 @@ pub fn solve() {
 
         for string in &vec {
             if is_str_number(string) {
-                map.entry(string.to_string())
-                    .or_insert(VecDeque::from(vec![]));
+                map.entry(string.to_string()).or_insert(vec![]);
             }
         }
 
@@ -41,17 +37,19 @@ pub fn solve() {
 
             match map.get_mut(&crate_stack) {
                 Some(x) => {
-                    x.push_front(cratee.to_string());
+                    x.push(cratee.to_string());
                 }
                 None => {
-                    map.insert(
-                        crate_stack.clone(),
-                        VecDeque::from(vec![cratee.to_string()]),
-                    );
+                    map.insert(crate_stack.clone(), vec![cratee.to_string()]);
                 }
             }
         }
     }
+
+    for item in map.values_mut() {
+        item.reverse();
+    }
+
     println!("Before change:");
     print_pretty_hashmap(&map);
     for line in file.lines() {
@@ -60,17 +58,30 @@ pub fn solve() {
         }
 
         let (amount, from, to) = parse_command(line);
-        for _ in 0..amount {
-            println!("{:?} {:?} {:?}", amount, from, to);
-            let cratee = map.get_mut(&from.to_string()).unwrap().pop_back().unwrap();
-            println!("{:?}", cratee);
+        println!("amount: {:?} from: {:?} to:{:?}", amount, from, to);
 
-            map.get_mut(&to.to_string()).unwrap().push_back(cratee);
-        }
+        let cratee = map.get_mut(from).unwrap();
 
-        println!("After change:");
-        print_pretty_hashmap(&map)
+        println!("cratee: {:?}", cratee);
+
+        let mut moved_crates = cratee
+            .drain((cratee.len() - amount)..cratee.len())
+            .collect::<Vec<String>>();
+
+        println!("moved_crates: {:?}", moved_crates);
+        map.get_mut(to).unwrap().append(&mut moved_crates);
     }
+    println!("After change:");
+    print_pretty_hashmap(&map);
+
+    let mut temp_vec: Vec<String> = vec![];
+    for item in map.iter() {
+        let strss = format!("{} {}", item.0, item.1[item.1.len() - 1]);
+
+        temp_vec.push(strss);
+    }
+    temp_vec.sort();
+    println!("temp_vec: {:?}", temp_vec);
 }
 
 fn is_str_number(s: &str) -> bool {
