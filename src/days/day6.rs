@@ -1,5 +1,6 @@
 use std::{collections::HashSet, fs};
 
+#[allow(dead_code)]
 pub fn solve() {
     let input_text = fs::read_to_string("input.txt").unwrap();
 
