@@ -1,97 +1,121 @@
-use std::collections::{HashMap, HashSet};
-use std::fs;
+use std::{
+    borrow::Borrow,
+    cell::RefCell,
+    fs,
+    rc::{Rc, Weak},
+};
 
-struct Dir<'a> {
-    name: &'a str,
-    size: u32,
-    nodes: Vec<Node<'a>>,
-}
-
-struct File {
+#[derive(Debug)]
+struct Node {
     name: String,
-    size: u32,
+    size: RefCell<u64>,
+    children: RefCell<Vec<Rc<Node>>>,
+    parent: Option<Weak<Node>>,
+}
+impl Node {
+    fn new(name: String, size: RefCell<u64>, parent: Option<Weak<Node>>) -> Self {
+        Self {
+            name,
+            size,
+            children: RefCell::new(Vec::new()),
+            parent,
+        }
+    }
 }
 
 #[derive(Debug)]
-enum Command {
-    Cd,
-    Ls,
+struct Tree {
+    root: Rc<Node>,
 }
+impl Tree {
+    fn new() -> Self {
+        Self {
+            root: Rc::new(Node {
+                name: String::from("/"),
+                size: RefCell::new(0),
+                children: RefCell::new(Vec::new()),
+                parent: None,
+            }),
+        }
+    }
+    fn find_node(&self, name: &str) -> Option<Rc<Node>> {
+        self._find_node(&self.root, name)
+    }
 
-enum Node<'a> {
-    Dir(Dir<'a>),
-    File(File),
+    fn _find_node(&self, node: &Rc<Node>, name: &str) -> Option<Rc<Node>> {
+        if node.name == name {
+            return Some(Rc::clone(node));
+        }
+
+        let children = node.children.borrow();
+        for child in children.iter() {
+            if let Some(found) = self._find_node(child, name) {
+                return Some(found);
+            }
+        }
+
+        None
+    }
+    fn get_all_sizes(&self) -> Vec<u64> {
+        self._get_all_sizes(&self.root)
+    }
+    fn _get_all_sizes(&self, node: &Rc<Node>) -> Vec<u64> {
+        if node.children.borrow().is_empty() {
+            return vec![*node.size.borrow()];
+        }
+        let children = node.children.borrow();
+        let mut sizes = Vec::new();
+        for child in children.iter() {
+            sizes.append(&mut self._get_all_sizes(child));
+        }
+        sizes
+    }
 }
 
 pub fn solve() {
     let input = fs::read_to_string("input.txt").unwrap();
-
-    let mut dir_stack = vec!["/"];
-    let mut cwd = "/";
-    let mut listed_dirs: Vec<&str> = vec![];
+    let tree = Tree::new();
+    let mut current_dir = Rc::clone(&tree.root);
 
     for line in input.lines() {
-        let line = line.trim();
-
-        if !line.starts_with("$") {
-            println!("Invalid line: {line}");
+        if line.starts_with("$ cd") {
+            let dir = line.split("$ cd").nth(1).unwrap();
+            let dir = dir.trim();
+            if dir == ".." {
+                current_dir = Rc::clone(&current_dir.parent.clone().unwrap().upgrade().unwrap());
+                continue;
+            }
+            if dir == "/" {
+                current_dir = Rc::clone(&tree.root);
+                continue;
+            }
+            if dir != "/" {
+                let child = Rc::new(Node::new(
+                    dir.to_string(),
+                    RefCell::new(0),
+                    Some(Rc::downgrade(&current_dir)),
+                ));
+                current_dir.children.borrow_mut().push(Rc::clone(&child));
+                current_dir = Rc::clone(&child);
+                continue;
+            }
+        }
+        if line.starts_with("$ ls") {
             continue;
         }
-
-        line.split("$").skip(1).for_each(|line| {
-            let line = line.trim();
-            let (command, arg) = parse_command(line);
-            match command {
-                Command::Cd => match arg {
-                    "/" => {
-                        cwd = "/";
-                        dir_stack.clear();
-                        dir_stack.push("/");
-                        println!("called cd /, before pop, dir_stack = {:?}", dir_stack);
-                    }
-                    ".." => {
-                        println!("called .., before pop, dir_stack = {:?}", dir_stack);
-                        dir_stack.pop();
-                        println!("called .., after pop, dir_stack = {:?}", dir_stack);
-                    }
-                    _ => {
-                        println!(
-                            "called cd on {arg}, before push, dir_stack = {:?}",
-                            dir_stack
-                        );
-                        dir_stack.push(arg);
-                        println!(
-                            "called cd on {arg}, after push, dir_stack = {:?}",
-                            dir_stack
-                        );
-
-                        println!("current_dir before change = {:?}", cwd);
-                        cwd = dir_stack.last().unwrap();
-                        println!("current_dir after change = {:?}", cwd);
-                    }
-                },
-                Command::Ls => {
-                    println!(
-                        "bla bla: {:?}",
-                        input.lines().take(4).collect::<Vec<&str>>()
-                    );
-                    println!("lised ls, arg = {:?}", listed_dirs);
-                    println!("called ls,current_dir = {:?}", cwd);
-                    listed_dirs.clear();
-                }
-            }
-        });
+        let first_word = line.split(" ").nth(0).unwrap().trim();
+        if first_word == "dir" {
+            continue;
+        }
+        let size = first_word.parse::<u64>().unwrap();
+        *current_dir.size.borrow_mut() += size;
     }
-}
+    let all_sizes_vec = tree.get_all_sizes();
+    println!("vec sum{:?}", all_sizes_vec.iter().sum::<u64>());
+    println!("root size{:?}", tree.root.size.borrow());
 
-fn parse_command(cmd: &str) -> (Command, &str) {
-    let mut parts = cmd.split(" ");
-    let cmd = parts.next().unwrap();
-    let arg = parts.next().unwrap_or_else(|| "");
-
-    match cmd {
-        "cd" => (Command::Cd, arg.into()),
-        "ls" => (Command::Ls, "".into()),
-        _ => panic!("Unknown command"),
-    }
+    println!(
+        "{:?}",
+        all_sizes_vec.iter().filter(|x| *x <= &100000).sum::<u64>()
+    );
 }
