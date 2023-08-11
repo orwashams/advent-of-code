@@ -1,5 +1,4 @@
 use std::{
-    borrow::Borrow,
     cell::RefCell,
     fs,
     rc::{Rc, Weak},
@@ -21,23 +20,11 @@ impl Node {
             parent,
         }
     }
-    fn pretty_print(&self, depth: usize) {
-        let indent = "  ".repeat(depth);
-        let size = self.size.borrow();
-
-        println!(
-            "{}- {} ({})",
-            indent,
-            self.name,
-            if self.children.borrow().is_empty() {
-                format!("file, size={}", size)
-            } else {
-                "dir".to_string()
-            }
-        );
+    fn get_all_sizes(&self, sizes: &mut Vec<u64>) {
+        sizes.push(*self.size.borrow());
 
         for child in &*self.children.borrow() {
-            child.pretty_print(depth + 1);
+            child.get_all_sizes(sizes);
         }
     }
 }
@@ -57,50 +44,33 @@ impl Tree {
             }),
         }
     }
-    fn find_node(&self, name: &str) -> Option<Rc<Node>> {
-        self._find_node(&self.root, name)
-    }
-
-    fn _find_node(&self, node: &Rc<Node>, name: &str) -> Option<Rc<Node>> {
-        if node.name == name {
-            return Some(Rc::clone(node));
-        }
-
-        let children = node.children.borrow();
-        for child in children.iter() {
-            if let Some(found) = self._find_node(child, name) {
-                return Some(found);
-            }
-        }
-
-        None
-    }
     fn get_all_sizes(&self) -> Vec<u64> {
-        self._get_all_sizes(&self.root)
-    }
-    fn _get_all_sizes(&self, node: &Rc<Node>) -> Vec<u64> {
-        if node.children.borrow().is_empty() {
-            return vec![*node.size.borrow()];
-        }
-        let children = node.children.borrow();
         let mut sizes = Vec::new();
-        for child in children.iter() {
-            sizes.append(&mut self._get_all_sizes(child));
-        }
+        self.root.get_all_sizes(&mut sizes);
         sizes
     }
-    fn pretty_print(&self) {
-        self.root.pretty_print(0);
+
+    fn sync_sizes(&self) {
+        self._sync_sizes(&self.root);
+    }
+    fn _sync_sizes(&self, node: &Rc<Node>) {
+        if node.children.borrow().is_empty() {
+            return;
+        }
+        let children = node.children.borrow();
+        for child in children.iter() {
+            self._sync_sizes(child);
+            *node.size.borrow_mut() += child.size.borrow().clone();
+        }
     }
 }
 
 pub fn solve() {
-    let input = fs::read_to_string("input2.txt").unwrap();
+    let input = fs::read_to_string("input.txt").unwrap();
     let tree = Tree::new();
     let mut current_dir = Rc::clone(&tree.root);
 
     for line in input.lines() {
-        println!("line:{:?}, current_dir:{:?}", line, current_dir);
         if line.starts_with("$ cd") {
             let dir = line.split("$ cd").nth(1).unwrap();
             let dir = dir.trim();
@@ -131,20 +101,12 @@ pub fn solve() {
         let size = first_word.parse::<u64>().unwrap();
         *current_dir.size.borrow_mut() += size;
     }
+    tree.sync_sizes();
+
     let all_sizes_vec = tree.get_all_sizes();
-    println!("vec sum{:?}", all_sizes_vec.iter().sum::<u64>());
-    println!("root size{:?}", tree.root.size.borrow());
 
     println!(
-        "{:?}",
+        "\n\nYour answer is: {:?}\n\n",
         all_sizes_vec.iter().filter(|x| *x <= &100000).sum::<u64>()
     );
-    tree.pretty_print();
-}
-
-fn pretty_print_tree(node: &Rc<Node>) {
-    println!("{:?}", node);
-    for child in node.children.borrow().iter() {
-        pretty_print_tree(child);
-    }
 }
