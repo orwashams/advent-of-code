@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{self, BufRead};
-#[allow(dead_code, unused_imports)]
 
 pub fn solve() {
     let file = File::open("input.txt").expect("Failed to open input file");
@@ -29,7 +28,6 @@ pub fn solve() {
     );
 }
 
-#[allow(dead_code, unused_imports)]
 fn is_fully_contained(range1: (i32, i32), range2: (i32, i32)) -> bool {
     // Check if range1 is fully contained within range2
     range1.0 >= range2.0 && range1.1 <= range2.1

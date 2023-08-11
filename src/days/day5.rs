@@ -1,6 +1,5 @@
 use std::{collections::HashMap, fs};
 
-#[allow(dead_code)]
 pub fn solve() {
     let file = fs::read_to_string("input.txt").unwrap();
 
@@ -85,23 +84,19 @@ pub fn solve() {
     println!("temp_vec: {:?}", temp_vec);
 }
 
-#[allow(dead_code)]
 fn is_str_number(s: &str) -> bool {
     s.chars().all(|c| c.is_numeric())
 }
 
-#[allow(dead_code)]
 fn is_str_white_space(s: &str) -> bool {
     s.chars().all(|c| c.is_whitespace())
 }
 
-#[allow(dead_code)]
 fn parse_command(line: &str) -> (usize, &str, &str) {
     let vec = line.split(" ").collect::<Vec<&str>>();
     (vec[1].parse().unwrap(), vec[3], vec[5])
 }
 
-#[allow(dead_code)]
 fn print_pretty_hashmap<K, V>(hash_map: &HashMap<K, V>)
 where
     K: std::fmt::Debug,

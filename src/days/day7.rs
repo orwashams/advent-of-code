@@ -8,14 +8,12 @@ const TOTAL_DISK_SPACE: u64 = 70_000_000;
 const REQUIRED_SPACE_FOR_UPDATE: u64 = 30_000_000;
 
 #[derive(Debug)]
-#[allow(dead_code)]
 struct Node {
     name: String,
     size: RefCell<u64>,
     children: RefCell<Vec<Rc<Node>>>,
     parent: Option<Weak<Node>>,
 }
-#[allow(dead_code)]
 impl Node {
     fn new(name: String, size: RefCell<u64>, parent: Option<Weak<Node>>) -> Self {
         Self {
@@ -48,7 +46,6 @@ impl Node {
 struct Tree {
     root: Rc<Node>,
 }
-#[allow(dead_code)]
 impl Tree {
     fn new() -> Self {
         Self {

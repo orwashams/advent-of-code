@@ -1,6 +1,5 @@
-#[allow(dead_code, unused_imports)]
 pub fn solve() {
-    use std::{fs, ops::Add};
+    use std::fs;
 
     let input = fs::read_to_string("input.txt").unwrap();
 
@@ -23,7 +22,6 @@ pub fn solve() {
     println!("{}", result);
 }
 
-#[allow(dead_code, unused_imports)]
 enum XYZ {
     X = 0, //You Must Lost
     Y = 3, //You Must Draw

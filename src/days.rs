@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub mod day1;
 pub mod day10;
 pub mod day11;
