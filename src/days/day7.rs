@@ -4,6 +4,9 @@ use std::{
     rc::{Rc, Weak},
 };
 
+const TOTAL_DISK_SPACE: u64 = 70_000_000;
+const REQUIRED_SPACE_FOR_UPDATE: u64 = 30_000_000;
+
 #[derive(Debug)]
 #[allow(dead_code)]
 struct Node {
@@ -12,6 +15,7 @@ struct Node {
     children: RefCell<Vec<Rc<Node>>>,
     parent: Option<Weak<Node>>,
 }
+#[allow(dead_code)]
 impl Node {
     fn new(name: String, size: RefCell<u64>, parent: Option<Weak<Node>>) -> Self {
         Self {
@@ -28,12 +32,23 @@ impl Node {
             child.get_all_sizes(sizes);
         }
     }
+    fn pretty_print(&self, depth: usize) {
+        let indent = "  ".repeat(depth);
+        let size = self.size.borrow();
+
+        println!("{}- {} ({})", indent, self.name, format!("size={}", size));
+
+        for child in &*self.children.borrow() {
+            child.pretty_print(depth + 1);
+        }
+    }
 }
 
 #[derive(Debug)]
 struct Tree {
     root: Rc<Node>,
 }
+#[allow(dead_code)]
 impl Tree {
     fn new() -> Self {
         Self {
@@ -63,6 +78,9 @@ impl Tree {
             self._sync_sizes(child);
             *node.size.borrow_mut() += child.size.borrow().clone();
         }
+    }
+    fn pretty_print(&self) {
+        self.root.pretty_print(0);
     }
 }
 
@@ -107,7 +125,20 @@ pub fn solve() {
     let all_sizes_vec = tree.get_all_sizes();
 
     println!(
-        "\n\nYour answer is: {:?}\n\n",
+        "\n\nPart One Answer: {:?}\n\n",
         all_sizes_vec.iter().filter(|x| *x <= &100000).sum::<u64>()
     );
+
+    let unused_space = TOTAL_DISK_SPACE - tree.root.size.borrow().clone();
+
+    let required_space = REQUIRED_SPACE_FOR_UPDATE - unused_space;
+
+    println!(
+        "\n\nPart Two Answer: {:?}\n\n",
+        all_sizes_vec
+            .iter()
+            .filter(|x| *x >= &required_space)
+            .min()
+            .unwrap()
+    )
 }
