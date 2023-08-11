@@ -5,6 +5,7 @@ use std::{
 };
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct Node {
     name: String,
     size: RefCell<u64>,
